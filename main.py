@@ -1,92 +1,127 @@
-# main.py -- put your code here!
+import machine
+from modules import dht_module
 import time
-from machine import I2C, Pin, ADC
 import pycom
-
-from bme280 import BME280, BME280_OSAMPLE_16
-from anemometer import Anemometer
-from lora_pycom import join_lora, send_lora
+import _thread
+from modules.lora_module import join_lora, send_lora
 import ustruct
+#import random
+
+# global variables
+period = 0              # update periode in seconds for measuring a sending
+
+hum = None
+temp = None
+
+def measure_dht():
+    #print("function measure")
+    global d
+    global hum, temp
+    # measure DHT temp and hum values
+    if d.trigger() == True:
+        hum = d.humidity
+        temp = d.temperature
+        print(hum, temp)
+    else:
+        print(d.status)
+        print(None, None)
+    time.sleep(5)
+    #return(hum, temp)
 
 
-def measure_sensor():
+def measure():
+    hum = 0
+    temp = -40
+    #print("function measure")
     global payload
-    temp = bme.temperature
-    hum = bme.humidity
-    press = bme.pressure
-    print(" [+] Temp: " + temp + ", Pressure: " + press + ", Humidity: " + hum)
-    #print(type(hum))
-    #print(" [+] Temp: " + bme.temperature + ", Pressure: " + bme.pressure + ", Humidity: " + bme.humidity)
-    hum = int(float(hum) * 10)                 # 2 Bytes
-    temp = int(float(temp)*10) + 400           # max -40°, use it as offset
-    press = int(float(press) * 10)            # 300 to 1100 hPa with 2 digits after the point
-    light = apin_lightsensor()               # read the analog light sensor
-    windspeed = sensor_anemometer.get_windspeed()
-    windspeed = int(windspeed * 10)           # convert into a int with multiplying by 10
-    winddirection = sensor_anemometer.get_dir()
-    winddirection = int(winddirection)
+    global d
+    # measure DHT temp and hum values
+    if d.trigger() == True:
+        hum = d.humidity
+        temp = d.temperature
+        #temp = random.randrange(10, 40, 0.1)
+        #hum = random.randrange(0, 100, 0.1)
+    
+        # encode
+        hum = int(hum * 10)                 # 2 Bytes
+        temp = int(temp*10) + 400           # max -40°, use it as offset
+        #print("temp: ", temp, "hum: ", hum)
 
-    print(" [***] temp: ", temp, "hum: ", hum, "press: ", press, "light:", light, "windspeed:", windspeed, "winddirection: ", winddirection)
-
-    ht_bytes = ustruct.pack('HHHHHH', hum, temp, press, light, windspeed, winddirection)
-    print("ht_bytes:", ht_bytes)
-    for i in range(len(ht_bytes)):
-        payload.append(ht_bytes[i])
-    # payload.append(ht_bytes[0])
-    # payload.append(ht_bytes[1])
-    # payload.append(ht_bytes[2])
-    # payload.append(ht_bytes[3])
-    # payload.append(ht_bytes[4])
-    # payload.append(ht_bytes[5])
-    # payload.append(ht_bytes[6])
-    # payload.append(ht_bytes[7])
-
+        ht_bytes = ustruct.pack('HH', hum, temp)
+        payload.append(ht_bytes[0])
+        payload.append(ht_bytes[1])
+        payload.append(ht_bytes[2])
+        payload.append(ht_bytes[3])
+    
+        #print("payload written", payload)
+    # confirm with LED
+    # pycom.rgbled(0x0000FF)  # Blue
+    # time.sleep(0.1)
+    # pycom.rgbled(0x000000)  # Off
+    # time.sleep(1.9)
+    else:
+        print(d.status)
+        payload = []
 
 
-# mind the pinout of the LOPY and MAKR Module 2.0
-i2c = I2C(0, pins=('P9','P10'))     # create and use non-default PIN assignments (P10=SDA, P11=SCL)
-i2c.init(I2C.MASTER, baudrate=20000) # init as a master
-i2c = I2C(0, I2C.MASTER, baudrate=400000)
-#print(i2c.scan())
-bme = BME280(i2c=i2c, mode=BME280_OSAMPLE_16)
+# def mock_measure():
+#     print("mock_measure starting")
+#     global payload
+#     mm = []
+#     mm_temp = (random.randrange(300, 400, 1)/10)
+#     mm_hum = (random.randrange(0, 1000, 1)/10)
+#     print("mock hum temp:", mm_hum, mm_temp)
+#     print("mock ohum otemp:", int(mm_hum*10), int(mm_temp*10))
+#     ht_bytes = struct.pack('HH', int(mm_hum*10), int(mm_temp*10))
+#     payload.append(ht_bytes[0])
+#     payload.append(ht_bytes[1])
+#     payload.append(ht_bytes[2])
+#     payload.append(ht_bytes[3])
+#     print(payload)
 
-# light sensor init
-adc = ADC()             # create an ADC object for the light sensor
-apin_lightsensor = adc.channel(pin='P13', attn = ADC.ATTN_11DB)   # create an analog pin on P13, 3.3V reference, 12bit
-
-# anemometer init
-sensor_anemometer = Anemometer()
+def create_payload(data):
+    pass
 
 
 print("starting main")
-period = 3
 
-print("start lora")
-sckt = join_lora()
-time.sleep(2)
+if __name__ == "__main__":
+    sckt = join_lora()
+    time.sleep(2)
+    # global data buffer
+    payload = []            # common data buffer to collect and send
+    d = dht_module.device(machine.Pin.exp_board.G22)
+    while True:
+        measure_dht()
+        print("global:", hum, temp)
+        print(hum, temp)
+        #mock_measure()     
 
-payload = []
+        if hum != None and temp != None:
+            # encode
+            hum = int(hum * 10)                 # 2 Bytes
+            temp = int(temp*10) + 400           # max -40°, use it as offset
+            #print("temp: ", temp, "hum: ", hum)
 
-while True:
-    #print("On")
-    #p_out.value(1)
+            ht_bytes = ustruct.pack('HH', hum, temp)
+            payload.append(ht_bytes[0])
+            payload.append(ht_bytes[1])
+            payload.append(ht_bytes[2])
+            payload.append(ht_bytes[3])
+            hum = None
+            temp = None
 
-    #print(" [+] Temp: " + bme.temperature + ", Pressure: " + bme.pressure + ", Humidity: " + bme.humidity)
+        print("LORA:", payload)
+        # payload = [0x01, 0x02, 0x03]
+        if len(payload) != 0:
+            send_lora(sckt, payload)
+            payload = []
+            # confirm with LED
+            # pycom.rgbled(0x0000FF)  # Blue
+            # time.sleep(0.1)
+            # pycom.rgbled(0x000000)  # Off
+            #time.sleep(1.9)
+        time.sleep(period)
 
-    #time.sleep(0.2)
-    #p_out.value(0)
-    #print("Off")
-    measure_sensor()
-    time.sleep(3)
-    #payload = [0x01, 0x02, 0x03]
 
-    print("LORA:", payload)
-    if len(payload) != 0:
-        send_lora(sckt, payload)
-        payload = []
-        #confirm with LED
-        #pycom.rgbled(0x0000FF)  # Blue
-        #time.sleep(0.1)
-        #pycom.rgbled(0x000000)  # Off
-        #time.sleep(1.9)
-    time.sleep(period)
+  
