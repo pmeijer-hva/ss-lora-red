@@ -32,7 +32,7 @@ def measure_dht():
 def measure():
     hum = 0
     temp = -40
-    #print("function measure")
+
     global payload
     global d
     # measure DHT temp and hum values
