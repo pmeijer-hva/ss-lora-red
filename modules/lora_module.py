@@ -15,7 +15,7 @@ lora = LoRa(mode=LoRa.LORAWAN, region=LoRa.EU868)
 app_eui = ubinascii.unhexlify('0000000000000000')
 app_key = ubinascii.unhexlify('4BD07AE853152C53975EDEAF9138DFC1')
 #uncomment to use LoRaWAN application provided dev_eui
-dev_eui = ubinascii.unhexlify('70B3D54993F60A16')
+dev_eui = ubinascii.unhexlify('70B3D57ED004FFCC')
 
 # Uncomment for US915 / AU915 & Pygate
 # for i in range(0,8):
@@ -31,14 +31,20 @@ def join_lora():
     # join a network using OTAA (Over the Air Activation)
     #uncomment below to use LoRaWAN application provided dev_eui
     print("try to join...")
-    lora.join(activation=LoRa.OTAA, auth=(app_eui, app_key), timeout=0)
-    #lora.join(activation=LoRa.OTAA, auth=(dev_eui, app_eui, app_key), timeout=0)
 
-    # wait until the module has joined the network
-    while not lora.has_joined():
-        time.sleep(2.5)
-        #time.sleep(7)
-        print('Not yet joined...')
+    try:
+        lora.join(activation=LoRa.OTAA, auth=(app_eui, app_key), timeout=0)
+   
+        #lora.join(activation=LoRa.OTAA, auth=(dev_eui, app_eui, app_key), timeout=0)
+
+        # wait until the module has joined the network
+        while not lora.has_joined():
+            time.sleep(2.5)
+            #time.sleep(7)
+            print('Not yet joined...')
+            
+    except Exception as e:
+        print("error:" + e)
 
     # join_wait = 0
     # while lora.has_joined():

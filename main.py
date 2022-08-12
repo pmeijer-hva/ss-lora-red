@@ -1,5 +1,5 @@
 import machine
-from modules import dht_module
+from modules import dht_module, lightsensor
 import time
 import pycom
 import _thread
@@ -12,6 +12,7 @@ period = 0              # update periode in seconds for measuring a sending
 
 hum = None
 temp = None
+light = None
 
 def measure_dht():
     #print("function measure")
@@ -21,18 +22,30 @@ def measure_dht():
     if d.trigger() == True:
         hum = d.humidity
         temp = d.temperature
-        print(hum, temp)
+        print("Humidity:", hum,  "Temperature: ",temp)
+        
     else:
         print(d.status)
         print(None, None)
     time.sleep(5)
+
     #return(hum, temp)
 
+def measure_light():
+    global apin_lightsensor
+    global light
+
+    light = apin_lightsensor()
+    if light != None:
+        print("Light: ", light)
+    else:
+        print("Light: ",None)
+    time.sleep(5)
 
 def measure():
     hum = 0
     temp = -40
-
+    #print("function measure")
     global payload
     global d
     # measure DHT temp and hum values
@@ -82,6 +95,9 @@ def measure():
 def create_payload(data):
     pass
 
+# light sensor init
+adc = machine.ADC()             # create an ADC object for the light sensor
+apin_lightsensor = adc.channel(pin='P13', attn = machine.ADC.ATTN_11DB)   # create an analog pin on P13, 3.3V reference, 12bit
 
 print("starting main")
 
@@ -93,23 +109,28 @@ if __name__ == "__main__":
     d = dht_module.device(machine.Pin.exp_board.G22)
     while True:
         measure_dht()
-        print("global:", hum, temp)
-        print(hum, temp)
+        #print("Humidity:", hum, "Temperature: ",temp)
+        #print(hum, temp)
         #mock_measure()     
+        measure_light()
 
         if hum != None and temp != None:
             # encode
             hum = int(hum * 10)                 # 2 Bytes
             temp = int(temp*10) + 400           # max -40°, use it as offset
+            light = int(light)
             #print("temp: ", temp, "hum: ", hum)
 
-            ht_bytes = ustruct.pack('HH', hum, temp)
+            ht_bytes = ustruct.pack('HHH', hum, temp, light)
             payload.append(ht_bytes[0])
             payload.append(ht_bytes[1])
             payload.append(ht_bytes[2])
             payload.append(ht_bytes[3])
+            payload.append(ht_bytes[4])
+
             hum = None
             temp = None
+            light = None
 
         print("LORA:", payload)
         # payload = [0x01, 0x02, 0x03]
