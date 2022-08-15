@@ -1,5 +1,5 @@
 import machine
-from modules import dht_module, lightsensor
+from modules import dht_module, lightsensor, anemometer
 import time
 import pycom
 import _thread
@@ -13,6 +13,7 @@ period = 0              # update periode in seconds for measuring a sending
 hum = None
 temp = None
 light = None
+windspeed = None
 
 def measure_dht():
     #print("function measure")
@@ -41,6 +42,17 @@ def measure_light():
     else:
         print("Light: ",None)
     time.sleep(5)
+
+def measure_wind():
+    global Anemometer
+    global windspeed
+
+    if windspeed != None:
+        windspeed = sensor_anemometer.get_windspeed()
+        
+        print("Windspeed", windspeed)
+    else:
+        print("Windspeed:", None)
 
 def measure():
     hum = 0
@@ -99,10 +111,13 @@ def create_payload(data):
 adc = machine.ADC()             # create an ADC object for the light sensor
 apin_lightsensor = adc.channel(pin='P13', attn = machine.ADC.ATTN_11DB)   # create an analog pin on P13, 3.3V reference, 12bit
 
+# anemometer init
+sensor_anemometer = anemometer()
+
 print("starting main")
 
 if __name__ == "__main__":
-    sckt = join_lora()
+    #sckt = join_lora()
     time.sleep(2)
     # global data buffer
     payload = []            # common data buffer to collect and send
@@ -119,6 +134,7 @@ if __name__ == "__main__":
             hum = int(hum * 10)                 # 2 Bytes
             temp = int(temp*10) + 400           # max -40°, use it as offset
             light = int(light)
+            #windspeed = int(windspeed * 10)           # convert into a int with multiplying by 10
             #print("temp: ", temp, "hum: ", hum)
 
             ht_bytes = ustruct.pack('HHH', hum, temp, light)
@@ -128,14 +144,16 @@ if __name__ == "__main__":
             payload.append(ht_bytes[3])
             payload.append(ht_bytes[4])
 
+
             hum = None
             temp = None
             light = None
+            windspeed = None
 
         print("LORA:", payload)
         # payload = [0x01, 0x02, 0x03]
         if len(payload) != 0:
-            send_lora(sckt, payload)
+            #send_lora(sckt, payload)
             payload = []
             # confirm with LED
             # pycom.rgbled(0x0000FF)  # Blue
