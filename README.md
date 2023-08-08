@@ -1,2 +1,2 @@
-# ss-lora-green
-Lora client code for the green version
+# ss-lora-red
+Lora client code for the red version with a Pysens module integrated.
