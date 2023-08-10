@@ -23,14 +23,15 @@ class Main:
         measurements = self.py_sense()
 
         if len(measurements) == 4:
-            # print("hum " + hum + " temp " + temp + " light " + light)
             print(measurements)
             sckt = join_lora()
 
-            temp = int(float(measurements[0])*10) + 400           # max -40°, use it as offset
+            # because device warms up we substract 5, determined by Martin and Pim
+            offset_temp = 5;
+            temp = int(float(measurements[0] - offset_temp) * 10 ) + 400           # max -40°, use it as offset
             hum = int(float(measurements[1]) * 10)                 # 2 Bytes
             lux = int(float(measurements[2]) * 10)                 # 2 Bytes
-            press = int(float(measurements[3]) * 10)            # 300 to 1100 hPa with 2 digits after the point
+            press = int(float(measurements[3]) / 100)              # original value is in pA 
             ht_bytes = ustruct.pack('HHHH', temp, hum, lux, press)
 
             payload = []   
@@ -73,4 +74,3 @@ class Main:
 if __name__ == "__main__":
     pycom.heartbeat(False)
     Main()
-
