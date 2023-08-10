@@ -2,6 +2,8 @@ from network import LoRa
 import socket
 import time
 import ubinascii
+import pycom
+
 
 # Initialise LoRa in LORAWAN mode.
 # Please pick the region that matches where you are using the device:
@@ -21,18 +23,15 @@ dev_eui = ubinascii.unhexlify('70B3D54996E8DDEA')
 # blocking routine if not joined yet
 def join_lora():
     # join a network using OTAA (Over the Air Activation)
-    #uncomment below to use LoRaWAN application provided dev_eui
-    print("try to join...")
-
+    print("try to join LoRa network...")
+    
     try:
         #lora.join(activation=LoRa.OTAA, auth=(app_eui, app_key), timeout=0)
-   
         lora.join(activation=LoRa.OTAA, auth=(dev_eui, app_eui, app_key), timeout=0)
 
         # wait until the module has joined the network
         while not lora.has_joined():
             time.sleep(2.5)
-            #time.sleep(7)
             print('Not yet joined...')
             
     except Exception as e:
