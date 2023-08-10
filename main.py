@@ -34,23 +34,19 @@ class Main:
             press = int(float(measurements[3]) / 100)              # original value is in pA 
             ht_bytes = ustruct.pack('HHHH', temp, hum, lux, press)
 
-            payload = []   
-            payload.append(ht_bytes[0])
-            payload.append(ht_bytes[1])
-            payload.append(ht_bytes[2])
-            payload.append(ht_bytes[3])
-            payload.append(ht_bytes[4])
-            payload.append(ht_bytes[5])
-            payload.append(ht_bytes[6])
-            payload.append(ht_bytes[7])
+            payload = []  
+
+            #pack 8 bytes
+            for index in range(0,8):
+                payload.append(ht_bytes[index]) 
 
             send_lora(sckt, payload)
             pycom.rgbled(0x007f00) 
-            time.sleep(2)
         else:
             pycom.rgbled(0x7f0000) # red
-
-        machine.deepsleep(10000)    
+        
+        time.sleep(2)
+        machine.deepsleep(60000)    
 
     def py_sense(self): 
 
@@ -72,5 +68,4 @@ class Main:
         return measurements
 
 if __name__ == "__main__":
-    pycom.heartbeat(False)
     Main()
