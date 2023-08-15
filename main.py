@@ -1,12 +1,10 @@
 import machine
 import time
 import pycom
-import _thread
 from modules.lora import join_lora, send_lora
 import ustruct
 
 from lib.pycoproc_1 import Pycoproc
-from lib.LIS2HH12 import LIS2HH12
 from lib.SI7006A20 import SI7006A20
 from lib.LTR329ALS01 import LTR329ALS01
 from lib.MPL3115A2 import MPL3115A2,ALTITUDE,PRESSURE
@@ -41,12 +39,12 @@ class Main:
                 payload.append(ht_bytes[index]) 
 
             send_lora(sckt, payload)
-            pycom.rgbled(0x007f00) 
+            pycom.rgbled(0x007f00) #green
         else:
             pycom.rgbled(0x7f0000) # red
         
-        time.sleep(2)
-        machine.deepsleep(60000)    
+        time.sleep(1)
+        machine.deepsleep(12000)    
 
     def py_sense(self): 
 
